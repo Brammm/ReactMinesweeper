@@ -1,7 +1,8 @@
 import {useState} from 'react';
 import {shuffle} from './util';
+import Grid from './components/Grid';
 
-type Config = {
+export type Config = {
     width: number;
     height: number;
     mines: number;
@@ -12,12 +13,12 @@ type GameState = {
     cells: Cell[];
 };
 
-type Coord = {
+export type Coord = {
     x: number;
     y: number;
 };
 
-type Cell = {
+export type Cell = {
     coord: Coord;
     status: 'covered' | 'bomb';
 }
@@ -37,7 +38,7 @@ function generateMines(config: Config, origin: Coord): Coord[] {
     return mineLocations.slice(0, config.mines);
 }
 
-function generateCells(config: Config, mines: Coord[]): Cell[] {
+function generateGrid(config: Config, mines: Coord[]): Cell[] {
     let cells: Cell[] = [];
 
     for (let x = 0; x < config.width; x++) {
@@ -55,15 +56,15 @@ function generateCells(config: Config, mines: Coord[]): Cell[] {
 
 function Minesweeper() {
     const [config, setConfig] = useState<Config>({width: 16, height: 16, mines: 40});
-    const [gameState, setGameState] = useState<GameState>({status: 'idle', cells: generateCells(config, [])});
+    const [gameState, setGameState] = useState<GameState>({status: 'idle', cells: generateGrid(config, [])});
 
     const handleNewGame = () => {
-        setGameState({status: 'idle', cells: generateCells(config, [])});
+        setGameState({status: 'idle', cells: generateGrid(config, [])});
     };
 
-    const handleClick = (origin: Coord) => () => {
+    const handleClick = (origin: Coord) => {
         if (gameState.status === 'idle') {
-            setGameState({status: 'in_progress', cells: generateCells(config, generateMines(config, origin))});
+            setGameState({status: 'in_progress', cells: generateGrid(config, generateMines(config, origin))});
         }
     };
 
@@ -75,29 +76,9 @@ function Minesweeper() {
             <p>
                 <button onClick={handleNewGame}>New game</button>
             </p>
-            <div className={`grid border-l border-t border-gray-400 grid-cols-16`}>
-                {gameState.cells.map(({status, coord: {x, y}}) => {
-                        const isBomb = status === 'bomb';
-
-                        let className = 'border-b border-r border-gray-400';
-                        if (isBomb) {
-                            className += ' bg-red-500';
-                        }
-
-                        return (
-                            <button className={className} key={`${x}-${y}`} onClick={handleClick({x, y})}>
-                                <CellContent cell={{coord: {x, y}, status}} />
-                            </button>
-                        );
-                    },
-                )}
-            </div>
+            <Grid cells={gameState.cells} config={config} onClick={handleClick} />
         </div>
     );
-}
-
-function CellContent({cell}: {cell: Cell}) {
-    return 'i';
 }
 
 export default Minesweeper;
