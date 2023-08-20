@@ -1,4 +1,4 @@
-import {Config, Coord, Cell} from '../Minesweeper';
+import {Config, Coord, Cell} from '../UseMines';
 import {cx} from '../util';
 
 type Props = {
