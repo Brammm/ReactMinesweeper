@@ -23,16 +23,14 @@ type CellValue = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
 export type Cell = {
     coord: Coord;
-    isCovered: boolean;
-    status: 'bomb' | 'flag';
+    revealed: boolean;
+    mine: boolean;
+    flagged: boolean;
 } | {
     coord: Coord;
-    isCovered: true;
-    status: 'cell';
-} | {
-    coord: Coord;
-    isCovered: false;
-    status: 'cell';
+    revealed: true;
+    mine: false;
+    flagged: false;
     value: CellValue;
 }
 
@@ -44,6 +42,9 @@ export type GameAction = {
 } | {
     type: 'uncover';
     clicked: Coord;
+} | {
+    type: 'mark';
+    clicked: Coord;
 };
 
 const MinesReducer = produce((draft: GameState, action: GameAction) => {
@@ -51,33 +52,44 @@ const MinesReducer = produce((draft: GameState, action: GameAction) => {
         case 'reset_game':
             draft.status = 'idle';
             draft.cells = generateGrid(draft.config, [])
-            break;
+            return;
         case 'start_game':
             draft.status = 'in_progress';
             draft.cells = generateGrid(draft.config, generateMines(draft.config, action.origin))
-            break;
-        case 'uncover':
+            return;
+        case 'uncover': {
             const cellIndex = action.clicked.y * draft.config.width + action.clicked.x;
             const cell = draft.cells[cellIndex];
 
-            // Don't do anything if cell is already uncovered
-            if (!cell.isCovered) {
-                break;
+            // Don't do anything if cell is already revealed or flagged
+            if (cell.revealed || cell.flagged) {
+                return;
             }
 
-            if (cell.status === 'bomb') {
+            if (cell.mine) {
                 draft.status = 'lost';
-                draft.cells[cellIndex].isCovered = false;
+                draft.cells[cellIndex].revealed = true;
 
-                break;
+                return;
             }
 
-            if (cell.status === 'cell') {
-                let value: CellValue = countMines(draft, action.clicked);
-
-                draft.cells[cellIndex] = {...cell, isCovered: false, value};
-            }
+            let value: CellValue = countMines(draft, action.clicked);
+            draft.cells[cellIndex] = {...cell, mine: false, flagged: false, revealed: true, value};
+            return;
         }
+        case 'mark': {
+            const cellIndex = action.clicked.y * draft.config.width + action.clicked.x;
+            if (draft.cells[cellIndex].revealed) {
+                return;
+            }
+
+
+            draft.cells[cellIndex].flagged = ! draft.cells[cellIndex].flagged;
+            draft.cells[cellIndex].revealed = false;
+            return;
+        }
+    }
+
     }
 );
 
@@ -110,9 +122,9 @@ function generateGrid(config: Config, mines: Coord[]): GameState['cells'] {
         for (let y = 0; y < config.height; y++) {
             const coord = {x, y};
 
-            const isMine = mines.find((mine) => mine.x === coord.x && mine.y === coord.y);
+            const mine = !!mines.find((mine) => mine.x === coord.x && mine.y === coord.y);
 
-            cells[y * config.width + x] = {coord, status: isMine ? 'bomb' : 'cell', isCovered: true};
+            cells[y * config.width + x] = {coord, mine, revealed: false, flagged: false};
         }
     }
 
@@ -144,7 +156,7 @@ function getNeighbouringCells(state: GameState, coord: Coord): Cell[] {
 function countMines(state: GameState, coord: Coord): CellValue {
     let value: CellValue = 0;
     getNeighbouringCells(state, coord).forEach((cell) => {
-        if (cell.status === 'bomb') {
+        if (cell.mine) {
             value++;
         }
     })
