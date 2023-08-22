@@ -1,11 +1,9 @@
-import {useState} from 'react';
 import Grid from './components/Grid';
-import {Config, Coord, useMines} from './UseMines';
+import {Coord, useMines} from './UseMines';
 
 
 function Minesweeper() {
-    const [config, setConfig] = useState<Config>({width: 16, height: 16, mines: 40});
-    const [gameState, dispatch] = useMines(config);
+    const [gameState, dispatch] = useMines({width: 16, height: 16, mines: 40});
 
     const handleNewGame = () => {
         dispatch({type: 'reset_game'});
@@ -15,7 +13,11 @@ function Minesweeper() {
         if (gameState.status === 'idle') {
             dispatch({type: 'start_game', origin})
         }
+
+        dispatch({type: 'uncover', clicked: origin});
     };
+
+    console.log(gameState);
 
     return (
         <div>
@@ -25,7 +27,7 @@ function Minesweeper() {
             <p>
                 <button onClick={handleNewGame}>New game</button>
             </p>
-            <Grid cells={gameState.cells} config={config} onClick={handleClick} />
+            <Grid gameState={gameState} onClick={handleClick} />
         </div>
     );
 }
