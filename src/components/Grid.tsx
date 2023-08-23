@@ -6,10 +6,10 @@ import {ReactNode} from 'react';
 type Props = {
     gameState: GameState
     onUncover: (coord: Coord) => void;
-    onMark: (coord: Coord) => void;
+    onFlag: (coord: Coord) => void;
 }
 
-const Grid = ({gameState, onUncover, onMark}: Props) => {
+const Grid = ({gameState, onUncover, onFlag}: Props) => {
     const rows: Cell[][] = Object.values(gameState.cells).reduce((resultArray: Cell[][], cell: Cell, index: number) => {
         const chunkIndex = Math.floor(index / gameState.config.width);
 
@@ -30,7 +30,7 @@ const Grid = ({gameState, onUncover, onMark}: Props) => {
                         cell={cell}
                         key={`${cell.coord.x}-${cell.coord.y}`}
                         onUncover={() => onUncover(cell.coord)}
-                        onMark={() => onMark(cell.coord)}
+                        onMark={() => onFlag(cell.coord)}
                     />)}
                 </div>
             ))}

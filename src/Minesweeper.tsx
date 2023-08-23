@@ -10,23 +10,15 @@ function Minesweeper() {
     };
 
     const handleUncover = (origin: Coord) => {
-        if (gameState.status === 'lost') {
-            return;
-        }
-
-        if (gameState.status === 'idle') {
-            dispatch({type: 'start_game', origin})
-        }
-
         dispatch({type: 'uncover', clicked: origin});
     };
 
-    const handleMark = (origin: Coord) => {
+    const handleFlag = (origin: Coord) => {
         if (gameState.status === 'idle') {
             return;
         }
 
-        dispatch({type: 'mark', clicked: origin});
+        dispatch({type: 'flag', clicked: origin});
     };
 
     return (
@@ -35,9 +27,10 @@ function Minesweeper() {
                 Minesweeper
             </h1>
             <p>
+                {gameState.status === 'lost' && 'You lost the game!'}
                 <button onClick={handleNewGame}>New game</button>
             </p>
-            <Grid gameState={gameState} onUncover={handleUncover} onMark={handleMark} />
+            <Grid gameState={gameState} onUncover={handleUncover} onFlag={handleFlag} />
         </div>
     );
 }

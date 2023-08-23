@@ -1,6 +1,5 @@
 import {shuffle} from './util';
 import {useReducer} from 'react';
-import {produce} from 'immer';
 
 type Config = {
     width: number;
@@ -24,13 +23,13 @@ type CellValue = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export type Cell = {
     coord: Coord;
     revealed: boolean;
-    mine: boolean;
+    mine: true;
     flagged: boolean;
 } | {
     coord: Coord;
-    revealed: true;
+    revealed: boolean;
     mine: false;
-    flagged: false;
+    flagged: boolean;
     value: CellValue;
 }
 
@@ -43,55 +42,64 @@ export type GameAction = {
     type: 'uncover';
     clicked: Coord;
 } | {
-    type: 'mark';
+    type: 'flag';
     clicked: Coord;
 };
 
-const MinesReducer = produce((draft: GameState, action: GameAction) => {
+function MinesReducer(state: GameState, action: GameAction): GameState {
     switch (action.type) {
         case 'reset_game':
-            draft.status = 'idle';
-            draft.cells = generateGrid(draft.config, [])
-            return;
+            return {
+                ...state, status: 'idle',
+                cells: generateGrid(state.config, []),
+            };
         case 'start_game':
-            draft.status = 'in_progress';
-            draft.cells = generateGrid(draft.config, generateMines(draft.config, action.origin))
-            return;
+            return {
+                ...state, status: 'in_progress',
+                cells: generateGrid(state.config, generateMines(state.config, action.origin)),
+            };
         case 'uncover': {
-            const cellIndex = action.clicked.y * draft.config.width + action.clicked.x;
-            const cell = draft.cells[cellIndex];
+            if (state.status === 'idle') {
+                state = {
+                    ...state, status: 'in_progress',
+                    cells: generateGrid(state.config, generateMines(state.config, action.clicked)),
+                };
+            }
+
+            if (state.status !== 'in_progress') {
+                return state;
+            }
+
+
+            const cellIndex = action.clicked.y * state.config.width + action.clicked.x;
+            const cell = state.cells[cellIndex];
 
             // Don't do anything if cell is already revealed or flagged
             if (cell.revealed || cell.flagged) {
-                return;
+                return state;
             }
 
             if (cell.mine) {
-                draft.status = 'lost';
-                draft.cells[cellIndex].revealed = true;
-
-                return;
+                return {...state, status: 'lost', cells: {...state.cells, [cellIndex]: {...cell, revealed: true}}};
             }
 
-            let value: CellValue = countMines(draft, action.clicked);
-            draft.cells[cellIndex] = {...cell, mine: false, flagged: false, revealed: true, value};
-            return;
+            return {...state, cells: {...state.cells, [cellIndex]: {...cell, revealed: true}}};
         }
-        case 'mark': {
-            const cellIndex = action.clicked.y * draft.config.width + action.clicked.x;
-            if (draft.cells[cellIndex].revealed) {
-                return;
+        case 'flag': {
+            if (state.status !== 'in_progress') {
+                return state;
             }
 
+            const cellIndex = action.clicked.y * state.config.width + action.clicked.x;
+            const cell = state.cells[cellIndex];
+            if (state.cells[cellIndex].revealed) {
+                return state;
+            }
 
-            draft.cells[cellIndex].flagged = ! draft.cells[cellIndex].flagged;
-            draft.cells[cellIndex].revealed = false;
-            return;
+            return {...state, cells: {...state.cells, [cellIndex]: {...cell, flagged: true}}};
         }
     }
-
-    }
-);
+};
 
 export function useMines(config: Config) {
     return useReducer(
@@ -124,7 +132,9 @@ function generateGrid(config: Config, mines: Coord[]): GameState['cells'] {
 
             const mine = !!mines.find((mine) => mine.x === coord.x && mine.y === coord.y);
 
-            cells[y * config.width + x] = {coord, mine, revealed: false, flagged: false};
+            cells[y * config.width + x] = mine
+                ? {coord, mine: true, revealed: false, flagged: false}
+                : {coord, mine: false, revealed: false, flagged: false, value: 0};
         }
     }
 
@@ -145,7 +155,7 @@ function getNeighbouringCells(state: GameState, coord: Coord): Cell[] {
                 continue;
             }
 
-            neighbours.push(state.cells[(coord.y+dy)*state.config.width+coord.x+dx]);
+            neighbours.push(state.cells[(coord.y + dy) * state.config.width + coord.x + dx]);
         }
 
     }
@@ -159,7 +169,7 @@ function countMines(state: GameState, coord: Coord): CellValue {
         if (cell.mine) {
             value++;
         }
-    })
+    });
 
     return value;
 }
