@@ -16,6 +16,6 @@ export function shuffle(array: any[]): any[] {
     return [...array];
 }
 
-export function cx(...classes: string[]) {
+export function cx(...classes: (boolean|string)[]) {
     return classes.filter(Boolean).join(' ')
 }
