@@ -62,6 +62,7 @@ Grid.Cell = ({cell, onUncover, onMark}: GridCellProps) => {
             className={cx(
                 'block w-8 aspect-square rounded-sm font-bold',
                 !cell.revealed ? 'bg-gray-600' : (cell.mine ? 'bg-red-300' : 'bg-gray-300'),
+                // cell.mine ? (cell.revealed ? 'bg-red-300' : 'bg-red-500') : (cell.revealed ? 'bg-gray-300' : 'bg-gray-600'),
                 !cell.mine && cell.value === 1 && 'text-blue-600',
                 !cell.mine && cell.value === 2 && 'text-green-600',
                 !cell.mine && cell.value === 3 && 'text-orange-600',
@@ -70,7 +71,6 @@ Grid.Cell = ({cell, onUncover, onMark}: GridCellProps) => {
                 !cell.mine && cell.value === 6 && 'text-teal-600',
                 !cell.mine && cell.value === 7 && 'text-black',
                 !cell.mine && cell.value === 8 && 'text-gray-600',
-                // cell.mine ? (cell.revealed ? 'bg-red-300' : 'bg-red-500') : (cell.revealed ? 'bg-gray-300' : 'bg-gray-600'),
             )}
             onClick={() => {
                 onUncover();

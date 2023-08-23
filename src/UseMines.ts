@@ -69,7 +69,7 @@ function MinesReducer(state: GameState, action: GameAction): GameState {
                 return state;
             }
 
-            return {...state, cells: {...state.cells, [cellIndex]: {...cell, flagged: true}}};
+            return {...state, cells: {...state.cells, [cellIndex]: {...cell, flagged: !cell.flagged}}};
         }
         case 'uncover': {
             if (state.status === 'idle') {
