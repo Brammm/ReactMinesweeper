@@ -1,7 +1,7 @@
-import {Coord, Cell, GameState} from '../UseMines';
-import {cx} from '../util';
-import {FireIcon, FlagIcon} from '@heroicons/react/24/outline';
 import {ReactNode} from 'react';
+import {FireIcon, FlagIcon} from '@heroicons/react/24/outline';
+import {cx} from '../util';
+import {Coord, Cell, GameState} from '../UseMines';
 
 type Props = {
     gameState: GameState

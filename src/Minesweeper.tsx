@@ -1,6 +1,5 @@
-import Grid from './components/Grid';
 import {Coord, useMines} from './UseMines';
-
+import Grid from './components/Grid';
 
 function Minesweeper() {
     const [gameState, dispatch] = useMines({width: 16, height: 16, mines: 40});
@@ -27,6 +26,7 @@ function Minesweeper() {
                 Minesweeper
             </h1>
             <p>
+                {gameState.status === 'won' && 'You have won the game!'}
                 {gameState.status === 'lost' && 'You lost the game!'}
                 <button onClick={handleNewGame}>New game</button>
             </p>

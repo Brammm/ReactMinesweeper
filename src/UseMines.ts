@@ -1,5 +1,5 @@
-import {shuffle} from './util';
 import {useReducer} from 'react';
+import {shuffle} from './util';
 
 type Config = {
     width: number;
@@ -91,20 +91,38 @@ function MinesReducer(state: GameState, action: GameAction): GameState {
                 return state;
             }
 
+            // Kablooey - busted
             if (cell.mine) {
                 return {...state, status: 'lost', cells: {...state.cells, [cellIndex]: {...cell, revealed: true}}};
             }
 
+            // Recursively reveal cells
             const cellValues: Record<number, CellValue> = {};
             getCellIndexValues(cellValues, state, cell.coord);
-
             let newCells = {...state.cells};
-
             Object.entries(cellValues).forEach(([cellIndex, value]) => {
                 newCells[parseInt(cellIndex)] = {...newCells[parseInt(cellIndex)], mine: false, revealed: true, value};
             });
 
-            return {...state, cells: newCells};
+            // If we only have bombs remaining, reveal them and consider player won
+            const unrevealedCells = Object.values(newCells).filter((cell) => !cell.revealed);
+            if (unrevealedCells.every((cell) => cell.mine)) {
+                unrevealedCells.forEach((cell) => {
+                    const cellIndex = cell.coord.y * state.config.width + cell.coord.x;
+                    newCells[cellIndex] = {...cell, flagged: true}
+                })
+            }
+
+            // Check if player has won
+            const correctFlags = Object.values(newCells).filter((cell) => cell.mine && cell.flagged);
+            const revealedCells = Object.values(newCells).filter((cell) => cell.revealed);
+
+            let status: GameState['status'] = state.status;
+            if (revealedCells.length + correctFlags.length === state.config.width * state.config.height) {
+                status = 'won';
+            }
+
+            return {...state, status, cells: newCells};
         }
     }
 }
