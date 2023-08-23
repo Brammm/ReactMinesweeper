@@ -58,33 +58,6 @@ function MinesReducer(state: GameState, action: GameAction): GameState {
                 ...state, status: 'in_progress',
                 cells: generateGrid(state.config, generateMines(state.config, action.origin)),
             };
-        case 'uncover': {
-            if (state.status === 'idle') {
-                state = {
-                    ...state, status: 'in_progress',
-                    cells: generateGrid(state.config, generateMines(state.config, action.clicked)),
-                };
-            }
-
-            if (state.status !== 'in_progress') {
-                return state;
-            }
-
-
-            const cellIndex = action.clicked.y * state.config.width + action.clicked.x;
-            const cell = state.cells[cellIndex];
-
-            // Don't do anything if cell is already revealed or flagged
-            if (cell.revealed || cell.flagged) {
-                return state;
-            }
-
-            if (cell.mine) {
-                return {...state, status: 'lost', cells: {...state.cells, [cellIndex]: {...cell, revealed: true}}};
-            }
-
-            return {...state, cells: {...state.cells, [cellIndex]: {...cell, revealed: true}}};
-        }
         case 'flag': {
             if (state.status !== 'in_progress') {
                 return state;
@@ -98,8 +71,43 @@ function MinesReducer(state: GameState, action: GameAction): GameState {
 
             return {...state, cells: {...state.cells, [cellIndex]: {...cell, flagged: true}}};
         }
+        case 'uncover': {
+            if (state.status === 'idle') {
+                state = {
+                    ...state, status: 'in_progress',
+                    cells: generateGrid(state.config, generateMines(state.config, action.clicked)),
+                };
+            }
+
+            if (state.status !== 'in_progress') {
+                return state;
+            }
+
+            const cellIndex = action.clicked.y * state.config.width + action.clicked.x;
+            const cell = state.cells[cellIndex];
+
+            // Don't do anything if cell is already revealed or flagged
+            if (cell.revealed || cell.flagged) {
+                return state;
+            }
+
+            if (cell.mine) {
+                return {...state, status: 'lost', cells: {...state.cells, [cellIndex]: {...cell, revealed: true}}};
+            }
+
+            const cellValues: Record<number, CellValue> = {};
+            getCellIndexValues(cellValues, state, cell.coord);
+
+            let newCells = {...state.cells};
+
+            Object.entries(cellValues).forEach(([cellIndex, value]) => {
+                newCells[parseInt(cellIndex)] = {...newCells[parseInt(cellIndex)], mine: false, revealed: true, value};
+            });
+
+            return {...state, cells: newCells};
+        }
     }
-};
+}
 
 export function useMines(config: Config) {
     return useReducer(
@@ -149,23 +157,43 @@ function getNeighbouringCells(state: GameState, coord: Coord): Cell[] {
             // Skip if
             if (
                 (dx === 0 && dy === 0) // same as `coord`
-                || (coord.x + dx < 0 || coord.x + dx > state.config.width) // new x is out of bounds
-                || (coord.y + dy < 0 || coord.y + dy > state.config.height) // new y is out of bounds
+                || (coord.x + dx < 0 || coord.x + dx >= state.config.width) // new x is out of bounds
+                || (coord.y + dy < 0 || coord.y + dy >= state.config.height) // new y is out of bounds
             ) {
                 continue;
             }
 
-            neighbours.push(state.cells[(coord.y + dy) * state.config.width + coord.x + dx]);
+            neighbours.push(state.cells[((coord.y + dy) * state.config.width) + (coord.x + dx)]);
         }
-
     }
 
-    return neighbours;
+    return neighbours.filter(Boolean);
+}
+
+function getCellIndexValues(values: Record<number, CellValue>, state: GameState, coord: Coord) {
+    const value     = countMines(state, coord);
+    const cellIndex = coord.y * state.config.width + coord.x;
+
+    values[cellIndex] = value;
+
+    if (value === 0) {
+        const neighbours = getNeighbouringCells(state, coord);
+        const unrevealedUnprocessedNeighbours = neighbours.filter((cell) => {
+            const cellIndex = cell.coord.y * state.config.width + cell.coord.x;
+            return !cell.revealed && !values.hasOwnProperty(cellIndex);
+        });
+
+        unrevealedUnprocessedNeighbours.forEach((cell) => {
+            getCellIndexValues(values, state, cell.coord);
+        });
+    }
 }
 
 function countMines(state: GameState, coord: Coord): CellValue {
     let value: CellValue = 0;
-    getNeighbouringCells(state, coord).forEach((cell) => {
+    const neighbours = getNeighbouringCells(state, coord);
+
+    neighbours.forEach((cell) => {
         if (cell.mine) {
             value++;
         }
@@ -173,7 +201,3 @@ function countMines(state: GameState, coord: Coord): CellValue {
 
     return value;
 }
-
-// function isValidValue(value: number): value is CellValue {
-//     return value >= 0 && value <= 8;
-// }
