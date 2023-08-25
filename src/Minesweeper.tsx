@@ -1,12 +1,12 @@
 import {Coord, useMines} from './UseMines';
 import Grid from './components/Grid';
 import {Menu} from '@headlessui/react';
-import {EllipsisVerticalIcon, FlagIcon, SparklesIcon} from '@heroicons/react/24/outline';
+import {EllipsisVerticalIcon, SparklesIcon} from '@heroicons/react/24/outline';
 import {cx} from './util';
 import GameProgress from './components/GameProgress';
 
 function Minesweeper() {
-    const [gameState, dispatch] = useMines({width: 9, height: 9, mines: 10});
+    const [gameState, dispatch] = useMines({width: 16, height: 16, mines: 40});
 
     const handleNewGame = () => {
         dispatch({type: 'reset_game'});
@@ -45,7 +45,7 @@ function Minesweeper() {
                 </Menu>
             </div>
             <Grid gameState={gameState} onUncover={handleUncover} onFlag={handleFlag} />
-            <p className="flex justify-center mt-2 inline">
+            <p className="flex justify-center mt-2">
                 <GameProgress gameState={gameState} />
             </p>
         </div>
