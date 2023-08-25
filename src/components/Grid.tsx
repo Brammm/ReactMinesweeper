@@ -1,4 +1,4 @@
-import {ReactNode} from 'react';
+import {ReactNode, useEffect, useState} from 'react';
 import {FireIcon, FlagIcon} from '@heroicons/react/24/outline';
 import {cx} from '../util';
 import {Coord, Cell, GameState} from '../UseMines';
@@ -10,6 +10,18 @@ type Props = {
 }
 
 const Grid = ({gameState, onUncover, onFlag}: Props) => {
+    const [showFlashing, setShowFlashing] = useState<boolean>(false);
+
+    useEffect(() => {
+        let timeout: number|undefined = undefined;
+        if (gameState.status === 'lost' || gameState.status === 'won') {
+            setShowFlashing(true);
+            timeout = setTimeout(() => setShowFlashing(false), 4000);
+        }
+
+        return timeout ? () => clearTimeout(timeout) : undefined;
+    }, [gameState]);
+
     const rows: Cell[][] = Object.values(gameState.cells).reduce((resultArray: Cell[][], cell: Cell, index: number) => {
         const chunkIndex = Math.floor(index / gameState.config.width);
 
@@ -23,9 +35,9 @@ const Grid = ({gameState, onUncover, onFlag}: Props) => {
     }, []);
 
     return (
-        <div className="flex flex-col gap-px">
+        <div className={cx('flex flex-col gap-px', showFlashing && 'animate-pulse')}>
             {rows.map((row, index) => (
-                <div className="flex gap-px justify-center" key={index}>
+                <div className="flex gap-px" key={index}>
                     {row.map((cell) => <Grid.Cell
                         cell={cell}
                         key={`${cell.coord.x}-${cell.coord.y}`}
